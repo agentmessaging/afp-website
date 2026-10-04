@@ -1,0 +1,7 @@
+# Agent Files Protocol (AFP)
+# https://agentfiles.org (placeholder canonical, domain not registered)
+
+User-agent: *
+Allow: /
+
+Sitemap: https://agentfiles.org/sitemap.xml

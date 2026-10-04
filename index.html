@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Files Protocol (AFP) &mdash; File Sharing for Agents and People</title>
+    <meta name="description" content="Open protocol for agents and people to share files across hosts. Spaces, objects, references and five operations on top of any S3-compatible store. No mounted folders.">
+    <link rel="canonical" href="https://agentfiles.org">
+    <meta name="author" content="Juan Pel&aacute;ez">
+    <meta name="theme-color" content="#10b981">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://agentfiles.org">
+    <meta property="og:title" content="Agent Files Protocol (AFP)">
+    <meta property="og:description" content="Share objects by reference, not by mounted folder. An open protocol for agents and people.">
+    <meta property="og:site_name" content="Agent Files Protocol">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Agent Files Protocol (AFP)">
+    <meta name="twitter:description" content="An open protocol for agents and people to share files across hosts.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📁</text></svg>">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Syne', 'system-ui', 'sans-serif'],
+                        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        slate: { 950: '#020617', 900: '#0f172a', 850: '#131c31', 800: '#1e293b' },
+                        emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' },
+                        amber: { 400: '#fbbf24', 500: '#f59e0b' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+        body { background-color: #0f172a; color: #e2e8f0; }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .code-block { background: #0d1117; border: 1px solid #1e293b; border-radius: 8px; overflow-x: auto; }
+        .spec-table { border-collapse: collapse; width: 100%; }
+        .spec-table th { background: #131c31; text-align: left; }
+        .spec-table td, .spec-table th { border: 1px solid #1e293b; padding: 10px 14px; vertical-align: top; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <nav class="sticky top-0 bg-slate-900/95 backdrop-blur-lg border-b border-slate-800 z-[100]">
+        <div class="max-w-6xl mx-auto px-4 md:px-8">
+            <div class="flex justify-between items-center py-4">
+                <a href="/" class="flex items-center gap-3 text-white no-underline hover:opacity-80">
+                    <span class="text-2xl">📁</span>
+                    <span class="font-display font-bold text-lg md:text-xl tracking-tight">AFP</span>
+                </a>
+                <div class="flex gap-5 md:gap-8 items-center text-sm tracking-wide">
+                    <a href="#why" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">WHY</a>
+                    <a href="#idea" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">THE IDEA</a>
+                    <a href="#operations" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">OPERATIONS</a>
+                    <a href="#backends" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">BACKENDS</a>
+                    <a href="#amp" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">AMP</a>
+                    <a href="#security" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">SECURITY</a>
+                    <a href="https://github.com/agentmessaging/agent-files" class="px-4 py-2 rounded bg-emerald-500 text-slate-900 font-bold text-xs no-underline hover:bg-emerald-400">SPEC</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <header class="py-20 md:py-28 px-4 md:px-8">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="inline-block px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 mb-6">
+                <span class="font-mono text-xs text-emerald-400 tracking-widest">AFP v0.1 DRAFT</span>
+            </div>
+            <h1 class="font-display text-4xl md:text-6xl font-bold mb-6 leading-tight">
+                Files for <span class="gradient-text">AI Agents</span>
+            </h1>
+            <p class="text-slate-400 text-lg md:text-xl max-w-3xl mx-auto mb-10">
+                Do not share a filesystem. Share objects by reference. AFP lets an agent put a file, name it, prove what it is, and hand it to another agent or a person on any host, with no mounted folders.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#idea" class="px-8 py-4 rounded-lg bg-emerald-500 text-slate-900 font-bold text-sm tracking-wide hover:bg-emerald-400 no-underline">HOW IT WORKS</a>
+                <a href="https://github.com/agentmessaging/agent-files" class="px-8 py-4 rounded-lg bg-slate-800 text-white font-bold text-sm tracking-wide hover:bg-slate-700 no-underline">GITHUB</a>
+            </div>
+            <p class="text-slate-500 text-xs mt-8">Draft specification. Companion to AMP (messages), AAP (UI actions) and AID (identity).</p>
+        </div>
+    </header>
+
+    <section id="why" class="py-16 md:py-24 px-4 md:px-8 bg-slate-950/50">
+        <div class="max-w-5xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">THE PROBLEM</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-10 text-center">Why AFP?</h2>
+            <div class="overflow-x-auto">
+                <table class="spec-table text-sm">
+                    <thead><tr><th>Today</th><th>What goes wrong</th></tr></thead>
+                    <tbody>
+                        <tr><td>Mounted network folders (SMB, NFS)</td><td>macOS drops the mount. The agent hangs or errors on a path that vanished.</td></tr>
+                        <tr><td>Attach the file to a message</td><td>Fine for one recipient. Capped at 25 MB, expires with the message, nothing to browse later.</td></tr>
+                        <tr><td>A web file server on one host</td><td>People can use it. Agents on other hosts cannot.</td></tr>
+                        <tr><td>Per-vendor cloud storage</td><td>Each runtime invents its own way, and nothing interoperates.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section id="idea" class="py-16 md:py-24 px-4 md:px-8">
+        <div class="max-w-4xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">THE IDEA</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-6 text-center">Objects, not mounts</h2>
+            <p class="text-slate-400 text-lg mb-8 text-center">
+                Nothing is mounted, so nothing can drop. The store is the truth. A message that says "a file arrived" is only a hint.
+            </p>
+<pre class="code-block p-5 text-sm font-mono text-slate-300">agent A: afp put report.pdf  -&gt;  afp://artifacts/2026/10/report.pdf  (sha256:3b2c...)
+agent A: sends an AMP message that carries the reference, not the bytes
+agent B: afp get afp://artifacts/2026/10/report.pdf  -&gt;  verified against the digest
+human:   opens the same file from the agent UI, or from any S3 client</pre>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="font-display font-bold text-white mb-2">Space</h3>
+                    <p class="text-slate-400 text-sm">A named place with one backend and one access scope, such as <code class="font-mono text-emerald-400">shared</code> or <code class="font-mono text-emerald-400">artifacts</code>. A host configures its spaces.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="font-display font-bold text-white mb-2">Object and reference</h3>
+                    <p class="text-slate-400 text-sm">An object is one file at a path. Its reference, <code class="font-mono text-emerald-400">afp://space/path</code>, travels with a SHA-256 digest and a size.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="font-display font-bold text-white mb-2">Manifest</h3>
+                    <p class="text-slate-400 text-sm">A small JSON file next to each object: digest, size, content type, owner, created, optional expiry, and the scan result.</p>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                    <h3 class="font-display font-bold text-white mb-2">Capabilities</h3>
+                    <p class="text-slate-400 text-sm">A backend declares what it can do (<code class="font-mono text-emerald-400">link</code>, <code class="font-mono text-emerald-400">expire</code>, <code class="font-mono text-emerald-400">versions</code>, <code class="font-mono text-emerald-400">offline</code>, <code class="font-mono text-emerald-400">ui</code>). Callers check before relying on one.</p>
+                </div>
+            </div>
+            <p class="text-slate-500 text-sm mt-8 text-center">Not in v0.1: merging concurrent edits, end-to-end encryption, quotas, cross-organization federation.</p>
+        </div>
+    </section>
+
+    <section id="operations" class="py-16 md:py-24 px-4 md:px-8 bg-slate-950/50">
+        <div class="max-w-5xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">OPERATIONS</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-10 text-center">Five operations and a capability check</h2>
+            <div class="overflow-x-auto">
+                <table class="spec-table text-sm">
+                    <thead><tr><th>Operation</th><th>What it does</th></tr></thead>
+                    <tbody>
+                        <tr><td class="font-mono text-emerald-400">put</td><td>Computes the SHA-256, uploads, reads the digest back from the store, writes the manifest. Reports <code class="font-mono">stored: true</code> only after that check. Never falls back silently to a local copy.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">get</td><td>Downloads and compares the digest. A mismatch deletes the partial file and fails with <code class="font-mono">digest_mismatch</code>. A <code class="font-mono">suspicious</code> or <code class="font-mono">rejected</code> scan blocks the fetch.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">ls</td><td>Lists objects in a space, optionally by prefix, from the manifests.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">link</td><td>Mints a time-limited download link (default 1 hour, maximum 7 days). Needs the <code class="font-mono">link</code> capability.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">rm</td><td>Deletes an object and its manifest. By default only the owner or a host administrator may delete.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">capabilities</td><td>Returns what a space's backend can do, so an agent does not promise a link where none can be made.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-slate-400 text-sm mt-6">All output is JSON. A failure returns <code class="font-mono text-emerald-400">{ "ok": false, "error": { "code": "...", "message": "..." } }</code>. An unreachable store returns <code class="font-mono text-emerald-400">unreachable</code> and is never hidden.</p>
+        </div>
+    </section>
+
+    <section id="backends" class="py-16 md:py-24 px-4 md:px-8">
+        <div class="max-w-5xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">BACKENDS</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-6 text-center">Any S3-compatible store</h2>
+            <p class="text-slate-400 text-lg max-w-3xl mx-auto mb-10 text-center">
+                v0.1 defines one profile, <span class="font-mono text-emerald-400">s3</span>. <a href="https://garagehq.deuxfleurs.fr/" class="text-emerald-400">Garage</a> is the reference backend: a small, self-hosted store with a single-node mode and optional replication. Nothing in AFP requires it.
+            </p>
+            <div class="overflow-x-auto">
+                <table class="spec-table text-sm">
+                    <thead><tr><th>Topology</th><th>Typical use</th><th>Trade-offs</th></tr></thead>
+                    <tbody>
+                        <tr><td>Local only: Garage on one host, reached over a LAN or a private mesh</td><td>A team's fleet on its own network</td><td>No cost, no data leaves the network. One host is a single point of failure until replicated.</td></tr>
+                        <tr><td>Self-hosted in the cloud: Garage on a VPS or cloud instance behind a TLS reverse proxy</td><td>Agents and people in several places, links that must work from outside</td><td>You run and patch it. Reachable from anywhere, so the network is no longer the trust boundary and access keys matter more.</td></tr>
+                        <tr><td>Hosted S3-compatible service</td><td>No server to run</td><td>Data leaves your network. Provider terms, egress and pricing apply. Capabilities vary and must be declared.</td></tr>
+                        <tr><td>Multi-node Garage</td><td>Surviving a host failure</td><td>More to operate. Needs a replication factor above 1.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-slate-400 text-sm mt-6">A host may configure several spaces on different topologies, for example <span class="font-mono text-emerald-400">shared</span> on a local store and <span class="font-mono text-emerald-400">public</span> on a cloud store. Garage supports presigned URLs, multipart upload, CORS and lifecycle expiry. It does not support object versioning, S3 ACLs, bucket policies or quotas, and AFP does not need them.</p>
+        </div>
+    </section>
+
+    <section id="amp" class="py-16 md:py-24 px-4 md:px-8 bg-slate-950/50">
+        <div class="max-w-4xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">AMP INTEGRATION</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-6 text-center">Two kinds of attachment</h2>
+            <p class="text-slate-400 text-lg mb-8 text-center">
+                A message's <span class="font-mono text-emerald-400">payload.attachments</span> entry has a <span class="font-mono text-emerald-400">storage</span> field. An entry with no field is a <span class="font-mono text-emerald-400">provider</span> attachment, so existing messages are unaffected.
+            </p>
+            <div class="overflow-x-auto mb-8">
+                <table class="spec-table text-sm">
+                    <thead><tr><th><code class="font-mono">storage</code></th><th>Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td class="font-mono text-emerald-400">provider</td><td>Existing AMP behavior: uploaded to the provider, scanned, signed, expires with the message.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp</td><td>An AFP reference. No bytes pass through the provider.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+<pre class="code-block p-5 text-sm font-mono text-slate-300">{
+  "storage": "afp",
+  "filename": "report.pdf",
+  "content_type": "application/pdf",
+  "size": 1827341,
+  "digest": "sha256:3b2c9f5da87e4f1c8b0a2d6e9f3c7a1b5d8e2f4a6c0b3d7e9f1a4c6d8e0b2a4",
+  "ref": "afp://artifacts/2026/10/report.pdf",
+  "endpoint": "https://files.example.net",
+  "url": "https://files.example.net/artifacts/2026/10/report.pdf?X-Amz-Expires=3600&amp;..."
+}</pre>
+            <p class="text-slate-400 text-sm mt-6">The attachment lives inside <span class="font-mono text-emerald-400">payload</span>, so the message signature binds the reference and digest. Use a <span class="font-mono">provider</span> attachment for a file that belongs to one message and is under 25 MB. Use <span class="font-mono">afp</span> when the file is large, shared by several parties, must outlive the message, or is published for a person to retrieve.</p>
+        </div>
+    </section>
+
+    <section id="security" class="py-16 md:py-24 px-4 md:px-8">
+        <div class="max-w-4xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">SECURITY</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-8 text-center">What the spec requires</h2>
+            <ul class="space-y-3 text-slate-300 text-sm list-disc pl-6">
+                <li>AFP defines no authentication. The operator chooses the trust boundary: a private network, a mesh, or TLS plus scoped access keys.</li>
+                <li>Every path and space name is validated before any request is built. No <span class="font-mono">..</span>, absolute paths, empty segments, control characters or null bytes.</li>
+                <li>Implementations that drive a CLI pass an argument vector, never a shell string.</li>
+                <li>Every fetch checks the digest. A fetch without a digest check is non-conforming.</li>
+                <li>A fetched file from another party is data, not instructions. A viewer or canvas must not execute it.</li>
+                <li>A presigned link is a bearer credential until it expires. Keep lifetimes short.</li>
+                <li>An unreachable store is reported as an error. An implementation never reports success it cannot back.</li>
+            </ul>
+            <p class="text-slate-400 text-sm mt-6">What AFP does not protect: a store operator can read every object (no end-to-end encryption in v0.1), a leaked presigned link works until it expires, and a compromised access key exposes everything in its scope.</p>
+        </div>
+    </section>
+
+    <section class="py-16 px-4 md:px-8 text-center bg-slate-950/50">
+        <div class="max-w-3xl mx-auto">
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-4">Read the <span class="gradient-text">specification</span></h2>
+            <p class="text-slate-400 mb-8">Open protocol. MIT licensed. v0.1 draft.</p>
+            <a href="https://github.com/agentmessaging/agent-files" class="inline-block px-8 py-4 rounded-lg bg-emerald-500 text-slate-900 font-bold text-sm tracking-wide hover:bg-emerald-400 no-underline">AGENTMESSAGING/AGENT-FILES</a>
+        </div>
+    </section>
+
+    <footer class="py-12 pb-8 bg-slate-950 border-t border-slate-800 px-4 md:px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+                <div>
+                    <div class="flex items-center gap-3 mb-3"><span class="text-2xl">📁</span><span class="font-display font-bold text-lg text-white">AFP</span></div>
+                    <p class="text-slate-400 text-sm">An open protocol for agents and people to share files across hosts.</p>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-slate-500 tracking-widest mb-4">PROTOCOLS</h4>
+                    <a href="https://agentmessaging.org" class="block text-slate-400 no-underline mb-2 hover:text-emerald-400 text-sm">AMP &mdash; Agent Messaging Protocol</a>
+                    <a href="https://agentactions.org" class="block text-slate-400 no-underline mb-2 hover:text-emerald-400 text-sm">AAP &mdash; Agent Actions Protocol</a>
+                    <a href="https://agentids.org" class="block text-slate-400 no-underline mb-2 hover:text-emerald-400 text-sm">AID &mdash; Agent Identity Protocol</a>
+                    <a href="https://github.com/agentmessaging/agent-files" class="block text-slate-400 no-underline mb-2 hover:text-emerald-400 text-sm">AFP on GitHub</a>
+                </div>
+                <div>
+                    <h4 class="font-mono text-xs text-slate-500 tracking-widest mb-4">BUILT BY</h4>
+                    <p class="text-slate-400 text-sm mb-2"><a href="https://x.com/jkpelaez" class="text-white hover:text-emerald-400">Juan Pel&aacute;ez</a> @ <a href="https://23blocks.com" class="text-white hover:text-emerald-400">23blocks</a></p>
+                    <p class="text-slate-500 text-xs">Reference implementation: <a href="https://ai-maestro.23blocks.com" class="hover:text-emerald-400">AI Maestro</a></p>
+                </div>
+            </div>
+            <div class="pt-6 border-t border-slate-800 text-center">
+                <p class="text-slate-500 text-sm">&copy; 2026 Juan Pel&aacute;ez / 23blocks. MIT License.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
