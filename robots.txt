@@ -1,7 +1,11 @@
 # Agent Files Protocol (AFP)
-# https://agentfiles.org (placeholder canonical, domain not registered)
+# https://agentfiles.org
 
 User-agent: *
 Allow: /
 
 Sitemap: https://agentfiles.org/sitemap.xml
+
+# LLM-readable content
+# https://llmstxt.org
+LLMs-txt: https://agentfiles.org/llms.txt

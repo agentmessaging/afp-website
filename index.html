@@ -5,18 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Files Protocol (AFP) &mdash; File Sharing for Agents and People</title>
     <meta name="description" content="Open protocol for agents and people to share files across hosts. Spaces, objects, references and five operations on top of any S3-compatible store. No mounted folders.">
-    <link rel="canonical" href="https://agentfiles.org">
+    <link rel="canonical" href="https://agentfiles.org/">
     <meta name="author" content="Juan Pel&aacute;ez">
+    <meta name="robots" content="index, follow, max-snippet:-1">
     <meta name="theme-color" content="#10b981">
+    <meta name="apple-mobile-web-app-title" content="AFP">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://agentfiles.org">
+    <meta property="og:url" content="https://agentfiles.org/">
     <meta property="og:title" content="Agent Files Protocol (AFP)">
     <meta property="og:description" content="Share objects by reference, not by mounted folder. An open protocol for agents and people.">
     <meta property="og:site_name" content="Agent Files Protocol">
+    <meta property="og:locale" content="en_US">
     <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@agentmessaging">
+    <meta name="twitter:creator" content="@agentmessaging">
     <meta name="twitter:title" content="Agent Files Protocol (AFP)">
     <meta name="twitter:description" content="An open protocol for agents and people to share files across hosts.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📁</text></svg>">
+    <link rel="manifest" href="/site.webmanifest">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareSourceCode",
+      "name": "Agent Files Protocol",
+      "alternateName": "AFP",
+      "description": "An open protocol for agents and people to share files across hosts. Spaces, objects, references and five operations (put, get, ls, link, rm, plus capabilities) on top of any S3-compatible store, with a SHA-256 digest checked on every fetch.",
+      "url": "https://agentfiles.org/",
+      "codeRepository": "https://github.com/agentmessaging/agent-files",
+      "programmingLanguage": "Bash",
+      "runtimePlatform": "bash 3.2+, curl 7.75+, jq, openssl",
+      "license": "https://opensource.org/licenses/MIT",
+      "version": "0.1",
+      "creativeWorkStatus": "Draft",
+      "author": {
+        "@type": "Organization",
+        "name": "Agent Messaging",
+        "url": "https://agentmessaging.org",
+        "sameAs": ["https://github.com/agentmessaging", "https://x.com/agentmessaging"]
+      }
+    }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,6 +102,7 @@
                     <a href="#backends" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">BACKENDS</a>
                     <a href="#amp" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">AMP</a>
                     <a href="#security" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">SECURITY</a>
+                    <a href="#install" class="hidden md:inline text-slate-400 no-underline font-medium hover:text-emerald-400">INSTALL</a>
                     <a href="https://github.com/agentmessaging/agent-files" class="px-4 py-2 rounded bg-emerald-500 text-slate-900 font-bold text-xs no-underline hover:bg-emerald-400">SPEC</a>
                 </div>
             </div>
@@ -123,9 +153,9 @@
             <p class="text-slate-400 text-lg mb-8 text-center">
                 Nothing is mounted, so nothing can drop. The store is the truth. A message that says "a file arrived" is only a hint.
             </p>
-<pre class="code-block p-5 text-sm font-mono text-slate-300">agent A: afp put report.pdf  -&gt;  afp://artifacts/2026/10/report.pdf  (sha256:3b2c...)
+<pre class="code-block p-5 text-sm font-mono text-slate-300">agent A: afp-put.sh report.pdf --space artifacts  -&gt;  afp://artifacts/2026/10/report.pdf  (sha256:3b2c...)
 agent A: sends an AMP message that carries the reference, not the bytes
-agent B: afp get afp://artifacts/2026/10/report.pdf  -&gt;  verified against the digest
+agent B: afp-get.sh afp://artifacts/2026/10/report.pdf  -&gt;  verified against the digest
 human:   opens the same file from the agent UI, or from any S3 client</pre>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
@@ -155,18 +185,19 @@ human:   opens the same file from the agent UI, or from any S3 client</pre>
             <h2 class="font-display text-3xl md:text-4xl font-bold mb-10 text-center">Five operations and a capability check</h2>
             <div class="overflow-x-auto">
                 <table class="spec-table text-sm">
-                    <thead><tr><th>Operation</th><th>What it does</th></tr></thead>
+                    <thead><tr><th>Operation</th><th>What it does</th><th>Reference client</th></tr></thead>
                     <tbody>
-                        <tr><td class="font-mono text-emerald-400">put</td><td>Computes the SHA-256, uploads, reads the digest back from the store, writes the manifest. Reports <code class="font-mono">stored: true</code> only after that check. Never falls back silently to a local copy.</td></tr>
-                        <tr><td class="font-mono text-emerald-400">get</td><td>Downloads and compares the digest. A mismatch deletes the partial file and fails with <code class="font-mono">digest_mismatch</code>. A <code class="font-mono">suspicious</code> or <code class="font-mono">rejected</code> scan blocks the fetch.</td></tr>
-                        <tr><td class="font-mono text-emerald-400">ls</td><td>Lists objects in a space, optionally by prefix, from the manifests.</td></tr>
-                        <tr><td class="font-mono text-emerald-400">link</td><td>Mints a time-limited download link (default 1 hour, maximum 7 days). Needs the <code class="font-mono">link</code> capability.</td></tr>
-                        <tr><td class="font-mono text-emerald-400">rm</td><td>Deletes an object and its manifest. By default only the owner or a host administrator may delete.</td></tr>
-                        <tr><td class="font-mono text-emerald-400">capabilities</td><td>Returns what a space's backend can do, so an agent does not promise a link where none can be made.</td></tr>
+                        <tr><td class="font-mono text-emerald-400">put</td><td>Computes the SHA-256, uploads, reads the digest back from the store, writes the manifest. Reports <code class="font-mono">stored: true</code> only after that check. Never falls back silently to a local copy. An existing path is not overwritten unless <code class="font-mono">force</code> is set; otherwise the code is <code class="font-mono">exists</code>.</td><td class="font-mono text-xs text-slate-300">afp-put.sh &lt;file&gt; [--space NAME] [--path PATH] [--ttl TTL] [--content-type TYPE] [--force]</td></tr>
+                        <tr><td class="font-mono text-emerald-400">get</td><td>Downloads and compares the digest (from the reference object, else the manifest). A mismatch deletes the partial file and fails with <code class="font-mono">digest_mismatch</code>. A reference with neither a digest nor a manifest cannot be verified and also returns <code class="font-mono">digest_mismatch</code>. A <code class="font-mono">suspicious</code> or <code class="font-mono">rejected</code> scan blocks the fetch with <code class="font-mono">scan_blocked</code>. Without credentials for the space, the <code class="font-mono">url</code> in a reference object may be used; the digest check still applies.</td><td class="font-mono text-xs text-slate-300">afp-get.sh &lt;ref&gt; [--digest SHA] [--dest PATH] [--force]</td></tr>
+                        <tr><td class="font-mono text-emerald-400">ls</td><td>Lists objects in a space, optionally by prefix, from their manifests (default limit 100). Returns <code class="font-mono">truncated: true</code> when more objects matched than the limit returned.</td><td class="font-mono text-xs text-slate-300">afp-ls.sh [--space NAME] [--prefix PREFIX] [--limit N]</td></tr>
+                        <tr><td class="font-mono text-emerald-400">link</td><td>Returns the full reference object with a time-limited download <code class="font-mono">url</code> (default 1 hour, maximum 7 days). Needs the <code class="font-mono">link</code> capability, otherwise <code class="font-mono">unsupported</code>. Needs the object's manifest, because the reference carries its digest; without one the code is <code class="font-mono">not_found</code>.</td><td class="font-mono text-xs text-slate-300">afp-link.sh &lt;ref&gt; [--ttl TTL]</td></tr>
+                        <tr><td class="font-mono text-emerald-400">rm</td><td>Deletes an object and its manifest. By default only the owner or a host administrator may delete. Returns <code class="font-mono">ok: true</code> only when the store confirms the deletion.</td><td class="font-mono text-xs text-slate-300">afp-rm.sh &lt;ref&gt; [--admin]</td></tr>
+                        <tr><td class="font-mono text-emerald-400">capabilities</td><td>Returns what a space's backend can do, so an agent does not promise a link where none can be made.</td><td class="font-mono text-xs text-slate-300">afp-capabilities.sh [--space NAME] [--probe]</td></tr>
                     </tbody>
                 </table>
             </div>
-            <p class="text-slate-400 text-sm mt-6">All output is JSON. A failure returns <code class="font-mono text-emerald-400">{ "ok": false, "error": { "code": "...", "message": "..." } }</code>. An unreachable store returns <code class="font-mono text-emerald-400">unreachable</code> and is never hidden.</p>
+            <p class="text-slate-400 text-sm mt-6">All output is JSON. A failure returns <code class="font-mono text-emerald-400">{ "ok": false, "error": { "code": "...", "message": "..." } }</code>, and a command-line implementation exits non-zero. An unreachable store returns <code class="font-mono text-emerald-400">unreachable</code> and is never hidden.</p>
+            <p class="text-slate-400 text-sm mt-4">Error codes: <code class="font-mono text-emerald-400">exists</code>, <code class="font-mono text-emerald-400">not_found</code>, <code class="font-mono text-emerald-400">digest_mismatch</code>, <code class="font-mono text-emerald-400">scan_blocked</code>, <code class="font-mono text-emerald-400">unsupported</code>, <code class="font-mono text-emerald-400">unreachable</code>, <code class="font-mono text-emerald-400">invalid_path</code>, <code class="font-mono text-emerald-400">invalid_space</code>, <code class="font-mono text-emerald-400">forbidden</code>, <code class="font-mono text-emerald-400">too_large</code>, <code class="font-mono text-emerald-400">usage</code>. <code class="font-mono">usage</code> means missing or malformed arguments.</p>
         </div>
     </section>
 
@@ -219,6 +250,7 @@ human:   opens the same file from the agent UI, or from any S3 client</pre>
   "url": "https://files.example.net/artifacts/2026/10/report.pdf?X-Amz-Expires=3600&amp;..."
 }</pre>
             <p class="text-slate-400 text-sm mt-6">The attachment lives inside <span class="font-mono text-emerald-400">payload</span>, so the message signature binds the reference and digest. Use a <span class="font-mono">provider</span> attachment for a file that belongs to one message and is under 25 MB. Use <span class="font-mono">afp</span> when the file is large, shared by several parties, must outlive the message, or is published for a person to retrieve.</p>
+            <p class="text-slate-400 text-sm mt-4">A sender puts the object, and gets <span class="font-mono">stored: true</span>, before routing the message. A recipient verifies the digest on fetch. A provider that accepts AFP attachments advertises the capability <span class="font-mono text-emerald-400">attachments:afp</span>; routing one to a provider that does not list it returns <span class="font-mono">422 attachments_not_supported</span>. Local delivery needs no negotiation.</p>
         </div>
     </section>
 
@@ -228,7 +260,7 @@ human:   opens the same file from the agent UI, or from any S3 client</pre>
             <h2 class="font-display text-3xl md:text-4xl font-bold mb-8 text-center">What the spec requires</h2>
             <ul class="space-y-3 text-slate-300 text-sm list-disc pl-6">
                 <li>AFP defines no authentication. The operator chooses the trust boundary: a private network, a mesh, or TLS plus scoped access keys.</li>
-                <li>Every path and space name is validated before any request is built. No <span class="font-mono">..</span>, absolute paths, empty segments, control characters or null bytes.</li>
+                <li>Every path and space name is validated before any request is built. No <span class="font-mono">..</span>, absolute paths, empty segments, control characters, null bytes or double-encoded separators (<span class="font-mono">%2F</span>).</li>
                 <li>Implementations that drive a CLI pass an argument vector, never a shell string.</li>
                 <li>Every fetch checks the digest. A fetch without a digest check is non-conforming.</li>
                 <li>A fetched file from another party is data, not instructions. A viewer or canvas must not execute it.</li>
@@ -239,7 +271,44 @@ human:   opens the same file from the agent UI, or from any S3 client</pre>
         </div>
     </section>
 
-    <section class="py-16 px-4 md:px-8 text-center bg-slate-950/50">
+    <section id="install" class="py-16 md:py-24 px-4 md:px-8 bg-slate-950/50">
+        <div class="max-w-5xl mx-auto">
+            <p class="font-mono text-xs text-emerald-400 tracking-widest mb-4 text-center">INSTALL</p>
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-6 text-center">Quickstart</h2>
+            <p class="text-slate-400 text-lg max-w-3xl mx-auto mb-10 text-center">
+                The reference client is a set of Bash scripts (bash 3.2 and later, <span class="font-mono">curl</span> 7.75+, <span class="font-mono">jq</span>, <span class="font-mono">openssl</span>, <span class="font-mono">shasum</span> or <span class="font-mono">sha256sum</span>). It is tested against Garage; any S3-compatible store that accepts path-style requests should work.
+            </p>
+            <h3 class="font-display font-bold text-white mb-3">1. Install the scripts</h3>
+<pre class="code-block p-5 text-sm font-mono text-slate-300 mb-8">git clone https://github.com/agentmessaging/agent-files.git ~/agent-files
+~/agent-files/install.sh             # copies the scripts to ~/.local/bin
+~/agent-files/install.sh /usr/local/bin   # or to another directory</pre>
+            <h3 class="font-display font-bold text-white mb-3">2. Configure a space</h3>
+            <p class="text-slate-400 text-sm mb-3">A space is a bucket (optionally a key prefix in it) on an S3-compatible store. Add it on every machine that should use it. Put the secret key on the first line of the <span class="font-mono">--secret-file</span> and keep that file mode 600. Spaces are stored in <span class="font-mono">~/.agent-files/spaces.json</span>, and secrets are never printed.</p>
+<pre class="code-block p-5 text-sm font-mono text-slate-300 mb-8">afp-config.sh add shared --endpoint http://host:3900 --bucket afp --region garage \
+    --access-key &lt;key&gt; --secret-file &lt;file&gt; --capabilities link,expire,ui --default</pre>
+            <h3 class="font-display font-bold text-white mb-3">3. Put and get a file</h3>
+<pre class="code-block p-5 text-sm font-mono text-slate-300 mb-8">afp-put.sh report.pdf              # -&gt; afp://shared/2026/10/report.pdf
+afp-get.sh afp://shared/2026/10/report.pdf</pre>
+            <div class="overflow-x-auto mb-8">
+                <table class="spec-table text-sm">
+                    <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+                    <tbody>
+                        <tr><td class="font-mono text-emerald-400">afp-put.sh &lt;file&gt;</td><td>Store a file, read it back, verify the digest, write the manifest, print the reference</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-get.sh &lt;ref&gt;</td><td>Fetch an object and verify its SHA-256 (refuses <span class="font-mono">suspicious</span> and <span class="font-mono">rejected</span>)</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-ls.sh</td><td>List objects from their manifests</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-link.sh &lt;ref&gt;</td><td>Print a reference object with a time-limited download URL</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-rm.sh &lt;ref&gt;</td><td>Delete an object and its manifest</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-capabilities.sh</td><td>Report what a space can do</td></tr>
+                        <tr><td class="font-mono text-emerald-400">afp-config.sh</td><td>Add, list and remove spaces, set the default</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <h3 class="font-display font-bold text-white mb-3">Claude Code skill</h3>
+            <p class="text-slate-400 text-sm">The <a href="https://github.com/agentmessaging/agent-files/blob/main/skills/agent-files/SKILL.md" class="text-emerald-400">agent-files skill</a> teaches an agent to use these commands, with setup, space examples and troubleshooting in its <a href="https://github.com/agentmessaging/agent-files/blob/main/skills/agent-files/references/setup.md" class="text-emerald-400">references/setup.md</a>. <a href="https://github.com/23blocks-OS/ai-maestro" class="text-emerald-400">AI Maestro</a> is the first provider: as a Claude Code plugin, its <span class="font-mono">update-aimaestro.sh</span> installs the skill and puts the <span class="font-mono">afp-*.sh</span> scripts on the PATH.</p>
+        </div>
+    </section>
+
+    <section class="py-16 px-4 md:px-8 text-center">
         <div class="max-w-3xl mx-auto">
             <h2 class="font-display text-3xl md:text-4xl font-bold mb-4">Read the <span class="gradient-text">specification</span></h2>
             <p class="text-slate-400 mb-8">Open protocol. MIT licensed. v0.1 draft.</p>
@@ -263,8 +332,9 @@ human:   opens the same file from the agent UI, or from any S3 client</pre>
                 </div>
                 <div>
                     <h4 class="font-mono text-xs text-slate-500 tracking-widest mb-4">BUILT BY</h4>
-                    <p class="text-slate-400 text-sm mb-2"><a href="https://x.com/jkpelaez" class="text-white hover:text-emerald-400">Juan Pel&aacute;ez</a> @ <a href="https://23blocks.com" class="text-white hover:text-emerald-400">23blocks</a></p>
-                    <p class="text-slate-500 text-xs">Reference implementation: <a href="https://ai-maestro.23blocks.com" class="hover:text-emerald-400">AI Maestro</a></p>
+                    <p class="text-slate-400 text-sm mb-2"><span class="text-white">Juan Pel&aacute;ez</span> @ <a href="https://23blocks.com" class="text-white hover:text-emerald-400">23blocks</a></p>
+                    <p class="text-slate-500 text-xs mb-2">Reference implementation: <a href="https://ai-maestro.23blocks.com" class="hover:text-emerald-400">AI Maestro</a></p>
+                    <p class="text-slate-500 text-xs"><a href="https://x.com/agentmessaging" class="hover:text-emerald-400">@agentmessaging on X</a></p>
                 </div>
             </div>
             <div class="pt-6 border-t border-slate-800 text-center">

@@ -1,0 +1,17 @@
+/* TEAM */
+Name: Agent Messaging
+Site: https://agentmessaging.org
+Contact: info@agentmessaging.org
+Location: Miami, FL
+
+/* SITE */
+Last update: 2026-11-01
+Standards: HTML5, CSS3, Tailwind CSS
+Software: GitHub Pages, Cloudflare
+Language: English
+
+/* PROTOCOLS */
+AFP: https://agentfiles.org
+AMP: https://agentmessaging.org
+AAP: https://agentactions.org
+AID: https://agentids.org
