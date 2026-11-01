@@ -1,0 +1,10 @@
+{
+  "name": "Agent Files Protocol (AFP)",
+  "short_name": "AFP",
+  "description": "File sharing for agents and people, by reference, on any S3-compatible store",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "icons": []
+}

@@ -1,0 +1,56 @@
+# Agent Files Protocol (AFP)
+# https://agentfiles.org
+
+> AFP is an open protocol for agents and people to share files across hosts.
+> Files are shared as objects by reference (afp://space/path plus a SHA-256 digest) on any S3-compatible store, with no mounted folders.
+
+Status: Draft v0.1. Companion to AMP (messages), AAP (UI actions) and AID (identity).
+
+## Concepts
+
+- Space: a named place with one backend and one access scope, for example `shared` or `artifacts`. Name matches `^[a-z0-9][a-z0-9-]{0,62}$`.
+- Object: one file in a space at a path. Paths use `[a-zA-Z0-9._/-]`, at most 512 characters, no `..`, leading `/`, empty segments, control characters or null bytes. Immutable by convention.
+- Reference: `afp://<space>/<path>`. It travels as an object with `ref`, `digest` (`sha256:<hex>`) and `size`, and optionally `endpoint` and a time-limited `url`. Identity is `ref` plus `digest`.
+- Manifest: JSON stored next to the object at `<path>.afp.json`: digest, size, content_type, owner, created, optional expires, scan (`clean`, `basic_clean`, `unscanned`, `suspicious`, `rejected`).
+- Capabilities: `link`, `expire`, `versions`, `offline`, `ui`. Callers check before relying on one.
+
+## Operations
+
+- put: compute SHA-256, upload, read the digest back from the store, write the manifest. `stored: true` only after the digest is verified. Existing path fails with `exists` unless `force`.
+- get: download and verify the digest (from the reference object, else the manifest). Mismatch deletes the partial file and returns `digest_mismatch`; a reference with neither digest nor manifest also returns `digest_mismatch`. `suspicious` or `rejected` returns `scan_blocked`.
+- ls: list objects from manifests (default limit 100), with `truncated: true` when more matched.
+- link: full reference object with a download `url` (default 1 hour, max 7 days). `unsupported` without the `link` capability; `not_found` when the object has no manifest.
+- rm: delete an object and its manifest. Only the owner or a host administrator by default. Success only when the store confirms.
+- capabilities: the capability list for a space.
+
+Failures: `{ "ok": false, "error": { "code": "...", "message": "..." } }`. Error codes: exists, not_found, digest_mismatch, scan_blocked, unsupported, unreachable, invalid_path, invalid_space, forbidden, too_large, usage.
+
+## Backends
+
+v0.1 defines one profile, `s3` (PutObject, GetObject, HeadObject, ListObjectsV2, DeleteObject, presigned GET). Garage is the reference backend. Any S3-compatible store that accepts path-style requests works.
+
+## AMP integration
+
+An AMP attachment with `storage: "afp"` carries a reference instead of provider-hosted bytes. The sender puts the object before routing the message; the recipient verifies the digest on fetch. Providers that accept them advertise `attachments:afp`.
+
+## Install
+
+```
+git clone https://github.com/agentmessaging/agent-files.git ~/agent-files
+~/agent-files/install.sh
+afp-config.sh add shared --endpoint http://host:3900 --bucket afp --region garage \
+    --access-key <key> --secret-file <file> --capabilities link,expire,ui --default
+afp-put.sh report.pdf
+afp-get.sh afp://shared/2026/10/report.pdf
+```
+
+Commands: afp-put.sh, afp-get.sh, afp-ls.sh, afp-link.sh, afp-rm.sh, afp-capabilities.sh, afp-config.sh. Requires bash 3.2+, curl 7.75+, jq, openssl.
+
+## Links
+
+- Specification and reference client: https://github.com/agentmessaging/agent-files
+- Claude Code skill: https://github.com/agentmessaging/agent-files/blob/main/skills/agent-files/SKILL.md
+- Agent Messaging Protocol (AMP): https://agentmessaging.org
+- Agent Actions Protocol (AAP): https://agentactions.org
+- Agent Identity (AID): https://agentids.org
+- X / Twitter: https://x.com/agentmessaging
